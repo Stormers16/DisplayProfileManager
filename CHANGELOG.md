@@ -7,7 +7,7 @@ For user-facing release notes, see the [GitHub Releases](https://github.com/exyt
 ---
 
 <a id="2.3.0"></a>
-## [2.3.0] - 2026-10-17
+## [2.3.0] - 2026-10-18
 
 ### feat — profile switching and interface
 
@@ -19,6 +19,7 @@ For user-facing release notes, see the [GitHub Releases](https://github.com/exyt
 
 ### fix — settings and automation
 
+- **Default-profile badge refresh** — since [2.2.1](#2.2.1), saving a profile as the default updated the stored setting after the profile list had already refreshed, leaving the visible "Default" badge stale until another apply or refresh. The main window now updates the existing profile badges after the default setting is successfully saved, without disturbing the selected or active profile.
 - **Settings and hotkey reliability** — previously, settings changes could be reported as failed even after they were saved if an observer threw an exception; committed changes now remain successful and later observers can still be notified. Hotkey registration, capture, and cleanup now maintain UI-thread ownership and report incomplete shutdown instead of silently treating it as successful.
 - **Profile naming and settings migration** — previously, long or colliding names could cause repeated duplicate-name attempts, and failed migration could put legacy settings at risk. Case-insensitive naming now uses a bounded search without splitting surrogate pairs, while compatible legacy settings remain recoverable when promotion fails.
 - **Task Scheduler and IPC safeguards** — previously, concurrent elevated task registration could interfere through shared temporary XML, and held-open or oversized pipe messages could delay command handling. Registration now uses invocation-specific temporary files, while pipe reads are bounded and the server recovers after rejected requests.
@@ -63,7 +64,7 @@ For user-facing release notes, see the [GitHub Releases](https://github.com/exyt
 
 ### test — regression coverage
 
-- **Managed capability regressions — 1,150 cases** — the Release/x64 MSTest suite covers Quick Switch targeting and fallback, per-profile Start Menu shortcut identity, saved-layout geometry, profile editing and migration, settings/hotkey recovery, clone and wallpaper restoration, theme-parser restrictions, and automation boundaries.
+- **Managed capability regressions — 1,153 cases** — the Release/x64 MSTest suite covers Quick Switch targeting and fallback, per-profile Start Menu shortcut identity, saved-layout geometry, profile editing and migration, immediate default-profile badge updates after settings persistence, settings/hotkey recovery, clone and wallpaper restoration, theme-parser restrictions, and automation boundaries.
 - **Native and packaging regressions** — separate ShellExt and Setup checks exercise bounded native parsing, installer architecture and debug-symbol metadata, and staged-execution safeguards. Builder tests cover atomic saves, generated path/Unicode handling, palette validation, and saved-file auto-apply checks; package guards reject unintended frozen dependencies and unsafe archive content.
 
 <a id="2.2.2"></a>
@@ -122,7 +123,7 @@ _[exytral/DisplayProfileManager](https://github.com/exytral/DisplayProfileManage
 
 ### fix — profile persistence and editing
 
-- **Transactional profile mutations** — add/update operations persist the candidate before publishing it to the in-memory profile list, failed editor saves no longer leak working changes into the live profile, and default-profile references are updated only after the corresponding profile save succeeds.
+- **Transactional profile mutations** — add/update operations persist the candidate before publishing it to the in-memory profile list, failed editor saves no longer leak working changes into the live profile, and default-profile references are updated only after the corresponding profile save succeeds. This ordering introduced a stale main-window "Default" badge after saving a changed default; the badge refresh was corrected in [2.3.0](#2.3.0).
 - **Profile-load failure boundary** — an empty Profiles directory can still create the initial Default profile, while a directory containing saved profiles that all fail to load now reports failure and preserves the previous authoritative in-memory profile list instead of silently replacing it.
 - **Imported profile identity** — imported profile IDs are validated as GUIDs and normalized to canonical `D` form before they can participate in profile file paths; invalid or colliding IDs receive a fresh GUID.
 - **Profile schema 5** — wallpaper, audio, and script section enablement is stored with the corresponding nested settings object. Legacy root enable/script members remain accepted during deserialization and migrate to the normalized shape, with current nested values taking precedence when both forms are present. Profiles created by the application now start at the current schema version, while the parameterless constructor remains at `0` so schema-less legacy JSON still enters migration when loaded.

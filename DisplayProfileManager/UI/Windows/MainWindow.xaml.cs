@@ -80,7 +80,26 @@ namespace DisplayProfileManager.UI.Windows
             _profileService.ProfileDeleted += OnProfileDeleted;
             _profileService.ProfilesLoaded += OnProfilesLoaded;
             _profileService.ProfileApplied += OnProfileApplied;
+            _settingsService.SettingsChanged += OnSettingsChanged;
             _themeService.ThemeChanged += OnThemeChanged;
+        }
+
+        private void OnSettingsChanged(object sender, DisplayProfileManager.Settings.Models.AppSettings settings)
+        {
+            if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+                return;
+
+            // Settings notifications may originate off-thread while the persistence lock is held.
+            // Defer UI work and read the latest committed default when it actually executes.
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished)
+                    return;
+
+                ProfileDefaultBadgePolicy.Synchronize(
+                    _profileViewModels,
+                    _profileService.GetDefaultProfile()?.Id);
+            }));
         }
 
         private void OnThemeChanged(object sender, EventArgs e)
@@ -1157,6 +1176,7 @@ namespace DisplayProfileManager.UI.Windows
 
         protected override void OnClosed(EventArgs e)
         {
+            _settingsService.SettingsChanged -= OnSettingsChanged;
             _snapLayout?.Dispose();
             base.OnClosed(e);
         }

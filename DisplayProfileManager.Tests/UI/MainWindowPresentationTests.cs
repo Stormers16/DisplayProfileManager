@@ -13,6 +13,26 @@ namespace DisplayProfileManager.Tests.UI
     {
         [TestMethod]
         [TestCategory("Unit")]
+        public void PersistedDefaultProfileChanges_UpdateBadgesWithoutReplacingTheList()
+        {
+            string code = File.ReadAllText(FindRepositoryFile(
+                Path.Combine("DisplayProfileManager", "UI", "Windows", "MainWindow.xaml.cs")));
+
+            StringAssert.Contains(code, "_settingsService.SettingsChanged += OnSettingsChanged;");
+            StringAssert.Contains(code, "_settingsService.SettingsChanged -= OnSettingsChanged;");
+            int start = code.IndexOf("private void OnSettingsChanged(", StringComparison.Ordinal);
+            int end = code.IndexOf("private void OnThemeChanged(", start, StringComparison.Ordinal);
+            Assert.IsTrue(start >= 0 && end > start);
+
+            string handler = code[start..end];
+            StringAssert.Contains(handler, "Dispatcher.BeginInvoke(new Action(");
+            StringAssert.Contains(handler, "ProfileDefaultBadgePolicy.Synchronize(");
+            StringAssert.Contains(handler, "_profileService.GetDefaultProfile()?.Id");
+            Assert.IsFalse(handler.Contains("RefreshProfilesList(", StringComparison.Ordinal));
+        }
+
+        [TestMethod]
+        [TestCategory("Unit")]
         public void MainMinimumGeometry_BalancesPanesAndKeepsProfilesFlexible()
         {
             string xaml = File.ReadAllText(FindRepositoryFile(
